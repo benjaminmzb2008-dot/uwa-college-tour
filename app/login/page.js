@@ -16,7 +16,7 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!teamName.trim() || !accessCode.trim()) {
-      setError("Please fill in both Team Name and Passcode.");
+      setError("Please fill in both Team Number and Passcode.");
       return;
     }
 
@@ -41,24 +41,24 @@ export default function LoginPage() {
             <Award className="h-9 w-9" />
           </div>
           <h1 className="mt-4 font-display text-2xl font-extrabold uppercase text-navy tracking-wide">
-            UWA College Tour
+            UWA College Campus Tour
           </h1>
           <p className="mt-1 text-sm font-medium text-slate-500">
-            Enter your credentials to join the hunt
+            Enter your Team number and password to start your race
           </p>
         </div>
 
         <form onSubmit={handleSubmit} className="mt-8 space-y-5">
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Team Name
+              Team Number
             </label>
             <input
               type="text"
               required
               value={teamName}
               onChange={(e) => setTeamName(e.target.value)}
-              placeholder="e.g. Team Alpha"
+              placeholder="e.g. Team 1"
               className="w-full rounded-2xl bg-slate-50 px-4 py-3.5 text-base font-semibold text-slate-900 border border-slate-200 focus:border-navy focus:bg-white focus:outline-none placeholder:text-slate-400 cursor-text transition"
             />
           </div>
