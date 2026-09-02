@@ -5,14 +5,8 @@ import { X, Sparkles } from "lucide-react";
 export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] }) {
   if (!open || !badge) return null;
 
-  // 🔍 核心调试：在控制台打印看看收到的 badge 和总表是什么样的
-  console.log("【CelebrateOverlay 调试】当前收到的 badge:", badge);
-  console.log("【CelebrateOverlay 调试】当前传入的 allBadges 列表:", allBadges);
-
-  // 1. 先尝试直接取
   let iconSrc = badge.icon_url || badge.iconUrl;
   
-  // 2. 宽松匹配
   if (!iconSrc && allBadges.length > 0) {
     const matched = allBadges.find(b => 
       String(b.id) === String(badge.id || badge.badge_id) || 
@@ -35,25 +29,22 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
             <X className="h-4 w-4" />
           </button>
           
-          <div className="inline-flex items-center gap-1.5 rounded-full bg-gold/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-gold mb-3">
+          <div className="inline-flex items-center gap-1.5 rounded-full bg-gold/20 px-3 py-1 text-xs font-bold uppercase tracking-wider text-gold mb-4">
             <Sparkles className="h-3.5 w-3.5" /> Station Unlocked
           </div>
           
-          <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-inner overflow-hidden">
+          {/* 放大尺寸并改成完美的圆形展示 (rounded-full) */}
+          <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-white p-3 shadow-lg overflow-hidden border-4 border-white/20">
             {iconSrc ? (
-              <img src={iconSrc} alt={badge.name} className="h-full w-full object-contain" />
+              <img src={iconSrc} alt={badge.name} className="h-full w-full object-cover" />
             ) : (
-              <span className="text-4xl">🏆</span>
+              <span className="text-6xl">🏆</span>
             )}
           </div>
 
           <h3 className="font-display text-2xl font-extrabold uppercase tracking-wide">
             {badge.name}
           </h3>
-          
-          <p className="mt-2 text-[10px] text-yellow-300 break-all opacity-80">
-            URL: {iconSrc || "【依旧未找到，请按F12看控制台日志】"}
-          </p>
         </div>
 
         <div className="p-6 text-center space-y-4">
