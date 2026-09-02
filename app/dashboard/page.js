@@ -20,7 +20,7 @@ export default function DashboardPage() {
   const [celebration, setCelebration] = useState({ open: false, badge: null });
 
   const loadData = useCallback(async () => {
-    if (!team?.id) return;
+    if (!team?.id) return [];
     setPageError("");
 
     const [{ data: badgeRows, error: badgeError }, { data: unlockRows, error: unlockError }] =
@@ -35,7 +35,7 @@ export default function DashboardPage() {
     if (badgeError || unlockError) {
       setPageError("Could not load badges. Please refresh and try again.");
       setLoading(false);
-      return;
+      return [];
     }
 
     setBadges(badgeRows || []);
@@ -82,11 +82,23 @@ export default function DashboardPage() {
       };
     }
 
+    // 1. 强制重新加载最新数据
     const latestBadges = await loadData();
     const currentBadgeList = latestBadges?.length > 0 ? latestBadges : badges;
-    const badge = currentBadgeList.find((item) => item.id === result.badge_id);
+    
+    // 2. 用严格的字符串类型转换来精准匹配勋章
+    const foundBadge = currentBadgeList.find(
+      (item) => String(item.id) === String(result.badge_id)
+    );
 
-    setCelebration({ open: true, badge: badge || { name: result?.badge_name } });
+    // 3. 确保弹窗拿到的对象绝对包含 icon_url
+    const badgeToCelebrate = foundBadge || {
+      id: result.badge_id,
+      name: result?.badge_name,
+      icon_url: result?.icon_url || "",
+    };
+
+    setCelebration({ open: true, badge: badgeToCelebrate });
     return { success: true };
   }
 
