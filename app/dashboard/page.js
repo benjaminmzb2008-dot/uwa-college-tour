@@ -9,19 +9,74 @@ import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
-// 🛡️ 完整的静态校园徽章列表（已为你配置好 icon_url 路径，可替换为你的实际图片链接或本地路径）
+// 🛡️ 所有 11 个校园徽章已全部配置好 Supabase 云端图片链接
 const STATIC_ALL_BADGES = [
-  { id: 1, name: "347 - Psychology Building", description: "Checkpoint at Psychology Building", icon_url: "/icons/psychology.png" },
-  { id: 2, name: "446 - Barry J Marshall Library", description: "Checkpoint at Barry J Marshall Library", icon_url: "/icons/library.png" },
-  { id: 3, name: "227 - Sanders Building", description: "Checkpoint at Sanders Building", icon_url: "/icons/sanders.png" },
-  { id: 4, name: "235 - General Purpose Building 3", description: "Checkpoint at General Purpose Building", icon_url: "/icons/gp3.png" },
-  { id: 5, name: "275 - Ezone Central", description: "Checkpoint at Ezone", icon_url: "/icons/ezone.png" },
-  { id: 6, name: "224 - Engineering Building", description: "Checkpoint at Engineering Building", icon_url: "/icons/engineering.png" },
-  { id: 7, name: "274 - Irwin Street Building", description: "Checkpoint at Irwin Street Building", icon_url: "/icons/irwin.png" },
-  { id: 8, name: "106 - Arts Building", description: "Checkpoint at Arts Building", icon_url: "/icons/arts.png" },
-  { id: 9, name: "139 - Reid Library", description: "Checkpoint at Reid Library", icon_url: "/icons/reid.png" },
-  { id: 10, name: "101 - Winthrop Hall", description: "Checkpoint at Winthrop Hall", icon_url: "/icons/winthrop.png" },
-  { id: 11, name: "245 - Physics Building", description: "Checkpoint at Physics Building", icon_url: "/icons/physics.png" }
+  { 
+    id: 1, 
+    name: "347 - Psychology Building", 
+    description: "Checkpoint at Psychology Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/psychology.png" 
+  },
+  { 
+    id: 2, 
+    name: "446 - Barry J Marshall Library", 
+    description: "Checkpoint at Barry J Marshall Library", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/barry%20j.png" 
+  },
+  { 
+    id: 3, 
+    name: "227 - Sanders Building", 
+    description: "Checkpoint at Sanders Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/sender.png" 
+  },
+  { 
+    id: 4, 
+    name: "235 - General Purpose Building 3", 
+    description: "Checkpoint at General Purpose Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/gpb.png" 
+  },
+  { 
+    id: 5, 
+    name: "275 - Ezone Central", 
+    description: "Checkpoint at Ezone", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/ezone.png" 
+  },
+  { 
+    id: 6, 
+    name: "224 - Engineering Building", 
+    description: "Checkpoint at Engineering Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/engineering.png" 
+  },
+  { 
+    id: 7, 
+    name: "274 - Irwin Street Building", 
+    description: "Checkpoint at Irwin Street Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/irwin.png" 
+  },
+  { 
+    id: 8, 
+    name: "106 - Arts Building", 
+    description: "Checkpoint at Arts Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/art.png" 
+  },
+  { 
+    id: 9, 
+    name: "139 - Reid Library", 
+    description: "Checkpoint at Reid Library", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/reid.png" 
+  },
+  { 
+    id: 10, 
+    name: "101 - Winthrop Hall", 
+    description: "Checkpoint at Winthrop Hall", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/winthrop.png" 
+  },
+  { 
+    id: 11, 
+    name: "245 - Physics Building", 
+    description: "Checkpoint at Physics Building", 
+    icon_url: "https://mgpqlklkepmdycqkwqdn.supabase.co/storage/v1/object/public/campus%20tour/physics.png" 
+  }
 ];
 
 export default function DashboardPage() {
@@ -40,7 +95,6 @@ export default function DashboardPage() {
     setPageError("");
 
     try {
-      // 1. 优先从数据库拉取动态 badges（确保数据库里也填好了 icon_url）
       const badgeRes = await supabase
         .from("badges")
         .select("id, name, description, icon_url, photo_url, story_text")
@@ -50,7 +104,6 @@ export default function DashboardPage() {
         setBadges(badgeRes.data);
       }
 
-      // 2. 独立拉取当前团队真正解锁的记录
       if (teamId) {
         const unlockRes = await supabase
           .from("team_badges")
