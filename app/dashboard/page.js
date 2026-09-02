@@ -23,6 +23,8 @@ export default function DashboardPage() {
     if (!team?.id) return [];
     setPageError("");
 
+    console.log("【Dashboard】开始加载数据，当前 team_id:", team.id);[cite: 3]
+
     const [{ data: badgeRows, error: badgeError }, { data: unlockRows, error: unlockError }] =
       await Promise.all([
         supabase
@@ -32,6 +34,9 @@ export default function DashboardPage() {
         supabase.from("team_badges").select("badge_id, unlocked_at").eq("team_id", team.id),
       ]);
 
+    console.log("【Dashboard】数据库返回的 badges:", badgeRows, badgeError);[cite: 3]
+    console.log("【Dashboard】数据库返回的 team_badges (unlocked):", unlockRows, unlockError);[cite: 3]
+
     if (badgeError || unlockError) {
       setPageError("Could not load badges. Please refresh and try again.");
       setLoading(false);
@@ -40,13 +45,14 @@ export default function DashboardPage() {
 
     setBadges(badgeRows || []);
     
-    // 💡 统一转换为字符串键名，彻底杜绝数字与字符串 ID 无法匹配导致无法点亮的问题
     const map = {};
     (unlockRows || []).forEach((row) => {
       if (row?.badge_id != null) {
         map[String(row.badge_id)] = row.unlocked_at;
       }
     });
+    
+    console.log("【Dashboard】最终构建的 unlocked 映射字典:", map);[cite: 3]
     setUnlocked(map);
     setLoading(false);
     return badgeRows || [];
@@ -171,3 +177,4 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
+```[cite: 3]
