@@ -12,6 +12,7 @@ import { supabase } from "@/lib/supabase";
 export default function DashboardPage() {
   const { team, ready } = useAuth();
   const router = useRouter();
+  
   const [badges, setBadges] = useState([]);
   const [unlocked, setUnlocked] = useState({});
   const [loading, setLoading] = useState(true);
@@ -19,44 +20,58 @@ export default function DashboardPage() {
   const [pageError, setPageError] = useState("");
   const [celebration, setCelebration] = useState({ open: false, badge: null });
 
+  // 兼容所有可能的团队ID字段（id / team_id / uuid）
+  const teamId = team?.id || team?.team_id || team?.uuid;
+
   const loadData = useCallback(async () => {
-    if (!team?.id) return [];
-    setPageError("");
-
-    console.log("【Dashboard】开始加载数据，当前 team_id:", team.id);[cite: 3]
-
-    const [{ data: badgeRows, error: badgeError }, { data: unlockRows, error: unlockError }] =
-      await Promise.all([
-        supabase
-          .from("badges")
-          .select("id, name, description, icon_url, photo_url, story_text")
-          .order("id"),
-        supabase.from("team_badges").select("badge_id, unlocked_at").eq("team_id", team.id),
-      ]);
-
-    console.log("【Dashboard】数据库返回的 badges:", badgeRows, badgeError);[cite: 3]
-    console.log("【Dashboard】数据库返回的 team_badges (unlocked):", unlockRows, unlockError);[cite: 3]
-
-    if (badgeError || unlockError) {
-      setPageError("Could not load badges. Please refresh and try again.");
+    if (!teamId) {
       setLoading(false);
       return [];
     }
+    setPageError("");
 
-    setBadges(badgeRows || []);
-    
-    const map = {};
-    (unlockRows || []).forEach((row) => {
-      if (row?.badge_id != null) {
-        map[String(row.badge_id)] = row.unlocked_at;
+    try {
+      // 并行请求所有勋章与该团队已解锁的勋章
+      const [{ data: badgeRows, error: badgeError }, { data: unlockRows, error: unlockError }] =
+        await Promise.all([
+          supabase
+            .from("badges")
+            .select("id, name, description, icon_url, photo_url, story_text")
+            .order("id"),
+          supabase.from("team_badges").select("badge_id, unlocked_at").eq("team_id", teamId),
+        ]);
+
+      if (badgeError) {
+        console.error("加载徽章列表出错:", badgeError);
       }
-    });
-    
-    console.log("【Dashboard】最终构建的 unlocked 映射字典:", map);[cite: 3]
-    setUnlocked(map);
-    setLoading(false);
-    return badgeRows || [];
-  }, [team?.id]);
+      if (unlockError) {
+        console.error("加载团队已解锁徽章出错:", unlockError);
+      }
+
+      const allBadges = badgeRows || [];
+      setBadges(allBadges);
+      
+      // 构建解锁字典（统一转为字符串键，确保精准点亮）
+      const map = {};
+      (unlockRows || []).forEach((row) => {
+        const bId = row?.badge_id;
+        const uAt = row?.unlocked_at;
+        if (bId != null) {
+          map[String(bId)] = uAt || true;
+        }
+      });
+      setUnlocked(map);
+      
+      return allBadges;
+    } catch (err) {
+      console.error("loadData 发生未知异常:", err);
+      setPageError("Failed to load badge data.");
+      return [];
+    } finally {
+      // 无论成功还是失败，强制关闭 loading，绝不卡死
+      setLoading(false);
+    }
+  }, [teamId]);
 
   useEffect(() => {
     if (!ready) return;
@@ -67,12 +82,17 @@ export default function DashboardPage() {
     loadData();
   }, [ready, team, router, loadData]);
 
-  const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
+  // 计算已解锁数量
+  const unlockedCount = useMemo(() => {
+    return Object.keys(unlocked).length;
+  }, [unlocked]);
 
   async function handleRedeem(codeText) {
+    if (!teamId) return { success: false, message: "Team ID not found." };
     setRedeeming(true);
+    
     const { data, error } = await supabase.rpc("redeem_badge_code", {
-      p_team_id: team.id,
+      p_team_id: teamId,
       p_code_text: codeText,
     });
     setRedeeming(false);
@@ -92,6 +112,7 @@ export default function DashboardPage() {
       };
     }
 
+    // 兑换成功后立刻重新加载数据刷新状态
     const latestBadges = await loadData();
     const currentBadgeList = latestBadges?.length > 0 ? latestBadges : badges;
     
@@ -152,19 +173,28 @@ export default function DashboardPage() {
       <div className="mt-8">
         <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">Badge Vault</h2>
         <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {loading &&
-            Array.from({ length: 6 }).map((_, i) => (
-              <div key={i} className="h-72 animate-pulse rounded-3xl bg-white shadow-card" />
-            ))}
+          {loading && (
+            <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+              Loading vault...
+            </div>
+          )}
+          {!loading && badges.length === 0 && (
+            <div className="col-span-full py-12 text-center text-slate-400 font-medium">
+              No badges available in the system yet.
+            </div>
+          )}
           {!loading &&
-            badges.map((badge) => (
-              <BadgeCard
-                key={badge.id}
-                badge={badge}
-                unlockedAt={unlocked[String(badge.id)]}
-                onClick={handleBadgeClick}
-              />
-            ))}
+            badges.map((badge) => {
+              const isUnlocked = Boolean(unlocked[String(badge.id)]);
+              return (
+                <BadgeCard
+                  key={badge.id}
+                  badge={badge}
+                  unlockedAt={isUnlocked ? (unlocked[String(badge.id)] || true) : null}
+                  onClick={handleBadgeClick}
+                />
+              );
+            })}
         </div>
       </div>
 
@@ -177,4 +207,3 @@ export default function DashboardPage() {
     </AppShell>
   );
 }
-```[cite: 3]
