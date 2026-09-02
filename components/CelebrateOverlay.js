@@ -2,11 +2,19 @@
 
 import { X, Sparkles } from "lucide-react";
 
-export default function CelebrateOverlay({ open, badge, onClose }) {
+export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] }) {
   if (!open || !badge) return null;
 
-  // 确保兼容各种可能的字段名
-  const iconSrc = badge.icon_url || badge.iconUrl;
+  // 🛡️ 终极安全网：如果当前传进来的 badge 里没有 icon_url，
+  // 我们就用它的 id 去 allBadges 列表里找，或者尝试匹配名字，把 icon_url 强行捞出来！
+  let iconSrc = badge.icon_url || badge.iconUrl;
+  
+  if (!iconSrc && allBadges.length > 0) {
+    const matched = allBadges.find(b => b.id === badge.id || b.name === badge.name);
+    if (matched) {
+      iconSrc = matched.icon_url;
+    }
+  }
 
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
@@ -24,18 +32,9 @@ export default function CelebrateOverlay({ open, badge, onClose }) {
             <Sparkles className="h-3.5 w-3.5" /> Station Unlocked
           </div>
           
-          {/* 图标渲染区域 */}
           <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-inner overflow-hidden">
             {iconSrc ? (
-              <img 
-                src={iconSrc} 
-                alt={badge.name} 
-                className="h-full w-full object-contain"
-                onError={(e) => {
-                  console.error("图片加载失败，URL为:", iconSrc);
-                  e.target.style.display = 'none';
-                }}
-              />
+              <img src={iconSrc} alt={badge.name} className="h-full w-full object-contain" />
             ) : (
               <span className="text-4xl">🏆</span>
             )}
@@ -45,9 +44,9 @@ export default function CelebrateOverlay({ open, badge, onClose }) {
             {badge.name}
           </h3>
           
-          {/* 临时调试文字：如果这里显示“无链接”，说明传进来的 badge 对象里没有 icon_url */}
+          {/* 调试行：看看补救后有没有成功拿到 */}
           <p className="mt-2 text-[10px] text-yellow-300 break-all opacity-80">
-            URL: {iconSrc || "【警告：当前 badge 对象中没有 icon_url】"}
+            URL: {iconSrc || "【依旧未找到】"}
           </p>
         </div>
 

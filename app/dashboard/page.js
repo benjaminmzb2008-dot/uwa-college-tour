@@ -152,6 +152,7 @@ export default function DashboardPage() {
       <CelebrateOverlay
         open={celebration.open}
         badge={celebration.badge}
+        allBadges={badges} {/* 👈 把全局完整 badges 列表传进去自动对齐图标 */}
         onClose={() => setCelebration({ open: false, badge: null })}
       />
     </AppShell>
