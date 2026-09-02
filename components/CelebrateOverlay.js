@@ -6,14 +6,14 @@ export default function CelebrateOverlay({ open, badge, onClose }) {
   if (!open || !badge) return null;
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4 animate-fadeIn">
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden border border-slate-100">
         
         {/* 顶部标题栏 */}
-        <div className="bg-navy p-6 text-white text-center relative">
+        <div className="bg-[#29327c] p-6 text-white text-center relative">
           <button 
             onClick={onClose}
-            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition"
+            className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
           >
             <X className="h-4 w-4" />
           </button>
@@ -22,8 +22,8 @@ export default function CelebrateOverlay({ open, badge, onClose }) {
             <Sparkles className="h-3.5 w-3.5" /> Station Unlocked
           </div>
           
-          {/* 动态显示图标 */}
-          <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-inner">
+          {/* 渲染真实的 icon_url 图片 */}
+          <div className="mx-auto mb-3 flex h-24 w-24 items-center justify-center rounded-2xl bg-white p-2 shadow-inner overflow-hidden">
             {badge.icon_url ? (
               <img src={badge.icon_url} alt={badge.name} className="h-full w-full object-contain" />
             ) : (
@@ -44,7 +44,7 @@ export default function CelebrateOverlay({ open, badge, onClose }) {
 
           <button
             onClick={onClose}
-            className="gold-btn w-full rounded-2xl py-4 font-extrabold uppercase tracking-widest text-navy shadow-md hover:shadow-lg transition cursor-pointer"
+            className="w-full rounded-2xl bg-[#f4c430] py-4 font-extrabold uppercase tracking-widest text-[#29327c] shadow-md hover:shadow-lg transition cursor-pointer"
           >
             Awesome!
           </button>
