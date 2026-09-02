@@ -21,7 +21,7 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-navy/60 backdrop-blur-sm p-4">
       <div className="relative w-full max-w-md rounded-3xl bg-white shadow-2xl overflow-hidden border border-slate-100">
         
-        <div className="bg-[#29327c] p-6 text-white text-center relative">
+        <div className="bg-[#29327c] p-6 text-white text-center relative flex flex-col items-center">
           <button 
             onClick={onClose}
             className="absolute top-4 right-4 flex h-8 w-8 items-center justify-center rounded-full bg-white/10 hover:bg-white/20 text-white transition cursor-pointer"
@@ -33,12 +33,12 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
             <Sparkles className="h-3.5 w-3.5" /> Station Unlocked
           </div>
           
-          {/* 放大尺寸并改成完美的圆形展示 (rounded-full) */}
-          <div className="mx-auto mb-4 flex h-32 w-32 items-center justify-center rounded-full bg-white p-3 shadow-lg overflow-hidden border-4 border-white/20">
+          {/* 超大号圆形徽章展示区域 (192px * 192px) */}
+          <div className="mb-4 flex h-48 w-48 items-center justify-center rounded-full bg-white p-1 shadow-2xl overflow-hidden border-4 border-white/20">
             {iconSrc ? (
-              <img src={iconSrc} alt={badge.name} className="h-full w-full object-cover" />
+              <img src={iconSrc} alt={badge.name} className="h-full w-full object-contain" />
             ) : (
-              <span className="text-6xl">🏆</span>
+              <span className="text-7xl">🏆</span>
             )}
           </div>
 
