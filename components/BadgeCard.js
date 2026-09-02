@@ -3,7 +3,6 @@
 import { CheckCircle2, Lock } from "lucide-react";
 
 export default function BadgeCard({ badge, unlockedAt, onClick }) {
-  // 👈 加上这行，在 F12 控制台里打印看看这个勋章到底有没有 icon_url
   console.log("当前渲染的 Badge 数据:", badge);
 
   const isUnlocked = Boolean(unlockedAt);
@@ -18,15 +17,16 @@ export default function BadgeCard({ badge, unlockedAt, onClick }) {
       }`}
     >
       <div className="flex items-start justify-between">
+        {/* 加上了 p-2.5 内部缩进，让图标与圆角边框保持呼吸空间 */}
         <div
-          className={`flex h-14 w-14 items-center justify-center rounded-2xl text-2xl transition-transform duration-300 ${
+          className={`flex h-14 w-14 items-center justify-center rounded-2xl p-2.5 text-2xl transition-transform duration-300 ${
             isUnlocked
               ? "bg-[#29327c] text-gold group-hover:scale-110"
               : "bg-slate-200 text-slate-400"
           }`}
         >
           {badge.icon_url ? (
-            <img src={badge.icon_url} alt={badge.name} className="h-8 w-8 object-contain" />
+            <img src={badge.icon_url} alt={badge.name} className="h-full w-full object-contain" />
           ) : (
             "🏆"
           )}
