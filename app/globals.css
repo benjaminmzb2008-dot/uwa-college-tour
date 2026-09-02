@@ -1,0 +1,24 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --primary-navy: #29327c;
+}
+
+body {
+  background-color: #F4F6F8;
+  color: #1e293b;
+}
+
+/* 强制修改自定义全局按钮样式 */
+.gold-btn {
+  background-color: #FFB800;
+  color: #29327c !important;
+  transition: all 0.2s ease-in-out;
+}
+
+.gold-btn:hover {
+  background-color: #f5a600;
+  transform: translateY(-1px);
+}
