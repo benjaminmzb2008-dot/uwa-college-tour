@@ -33,10 +33,10 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
             <Sparkles className="h-3.5 w-3.5" /> Station Unlocked
           </div>
           
-          {/* 将缩放比例从 2.5 缩小 5%（调整为 2.35） */}
+          {/* 将缩放比例从 2.35 再缩小 10%（调整为 2.15） */}
           <div className="mb-4 flex h-48 w-48 items-center justify-center rounded-full bg-white p-1 shadow-2xl overflow-hidden border-4 border-white/20">
             {iconSrc ? (
-              <img src={iconSrc} alt={badge.name} className="h-full w-full object-contain scale-[2.35]" />
+              <img src={iconSrc} alt={badge.name} className="h-full w-full object-contain scale-[2.15]" />
             ) : (
               <span className="text-7xl">🏆</span>
             )}
