@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
+import BadgeCard from "@/components/BadgeCard";
 import CelebrateOverlay from "@/components/CelebrateOverlay";
 import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -28,16 +29,24 @@ export default function DashboardPage() {
     setPageError("");
 
     try {
-      const [badgeRes, unlockRes] = await Promise.all([
-        supabase.from("badges").select("*").order("id"),
-        supabase.from("team_badges").select("badge_id, unlocked_at").eq("team_id", teamId),
-      ]);
+      // 1. 获取全局所有的徽章（确保不漏掉任何一个）
+      const badgeRes = await supabase
+        .from("badges")
+        .select("id, name, description, icon_url, photo_url, story_text")
+        .order("id");
+
+      // 2. 严格只获取当前登录 team_id 对应的已解锁记录
+      const unlockRes = await supabase
+        .from("team_badges")
+        .select("badge_id, unlocked_at")
+        .eq("team_id", teamId);
 
       const badgeRows = badgeRes.data || [];
       const unlockRows = unlockRes.data || [];
 
       setBadges(badgeRows);
       
+      // 建立精准的解锁映射
       const map = {};
       unlockRows.forEach((row) => {
         if (row?.badge_id != null) {
@@ -45,10 +54,11 @@ export default function DashboardPage() {
         }
       });
       setUnlocked(map);
+      
       return badgeRows;
     } catch (err) {
       console.error("加载数据异常:", err);
-      setPageError("Failed to load data.");
+      setPageError("Failed to load badge data.");
       return [];
     } finally {
       setLoading(false);
@@ -64,6 +74,7 @@ export default function DashboardPage() {
     loadData();
   }, [ready, team, router, loadData]);
 
+  // 已解锁数量严格由当前团队的解锁字典决定
   const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
 
   async function handleRedeem(codeText) {
@@ -83,8 +94,16 @@ export default function DashboardPage() {
     }
 
     await loadData();
-    setCelebration({ open: true, badge: { id: result.badge_id, name: result?.badge_name, icon_url: result?.icon_url } });
+    const foundBadge = badges.find((item) => String(item.id) === String(result.badge_id));
+    setCelebration({ 
+      open: true, 
+      badge: foundBadge || { id: result.badge_id, name: result?.badge_name, icon_url: result?.icon_url } 
+    });
     return { success: true };
+  }
+
+  function handleBadgeClick(badge) {
+    setCelebration({ open: true, badge });
   }
 
   if (!ready || !team) {
@@ -118,36 +137,21 @@ export default function DashboardPage() {
 
       <div className="mt-8">
         <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-          Badge Vault (总数: {badges.length})
+          Badge Vault ({badges.length})
         </h2>
         
         {loading && <p className="mt-4 text-slate-500">Loading vault...</p>}
 
-        {/* 💡 暂时绕过 BadgeCard 组件，直接用原生 HTML 渲染，看它出不出内容 */}
-        <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+        <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
           {!loading && badges.map((badge) => {
             const isUnlocked = Boolean(unlocked[String(badge.id)]);
             return (
-              <div 
+              <BadgeCard
                 key={badge.id}
-                onClick={() => setCelebration({ open: true, badge })}
-                className={`p-6 rounded-3xl border transition cursor-pointer bg-white shadow-sm hover:shadow-md ${
-                  isUnlocked ? "border-mint ring-2 ring-mint/20" : "border-slate-200 opacity-60"
-                }`}
-              >
-                <div className="flex items-center justify-between mb-2">
-                  <span className="text-xs font-bold px-2.5 py-1 rounded-full bg-slate-100 text-slate-600">
-                    ID: {badge.id}
-                  </span>
-                  <span className={`text-xs font-bold px-2.5 py-1 rounded-full ${
-                    isUnlocked ? "bg-mint/10 text-mint" : "bg-slate-100 text-slate-400"
-                  }`}>
-                    {isUnlocked ? "UNLOCKED" : "LOCKED"}
-                  </span>
-                </div>
-                <h3 className="font-display text-lg font-bold text-[#29327c] truncate">{badge.name}</h3>
-                <p className="text-xs text-slate-500 mt-1 line-clamp-2">{badge.description || "Campus Checkpoint"}</p>
-              </div>
+                badge={badge}
+                unlockedAt={isUnlocked ? unlocked[String(badge.id)] : null}
+                onClick={handleBadgeClick}
+              />
             );
           })}
         </div>
