@@ -9,11 +9,23 @@ import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
+// 🛡️ 完整的静态校园徽章列表（确保 Vault 绝对不会为 0，并且能完美匹配所有关卡）
+const STATIC_ALL_BADGES = [
+  { id: 1, name: "224 - ENGINEERING BUILDING", description: "Checkpoint at Engineering Building", icon_url: "" },
+  { id: 2, name: "REID LIBRARY", description: "Checkpoint at Reid Library", icon_url: "" },
+  { id: 3, name: "WINTHROP HALL", description: "Checkpoint at Winthrop Hall", icon_url: "" },
+  { id: 4, name: "BUSINESS SCHOOL", description: "Checkpoint at Business School", icon_url: "" },
+  { id: 5, name: "SPORTS CENTRE", description: "Checkpoint at Sports Centre", icon_url: "" },
+  { id: 6, name: "MCLARTY WING", description: "Checkpoint at McLarty Wing", icon_url: "" },
+  { id: 7, name: "STUDENT CENTRAL", description: "Checkpoint at Student Central", icon_url: "" },
+  { id: 8, name: "SEABORNE HILTON", description: "Checkpoint at Seaborne Hilton", icon_url: "" }
+];
+
 export default function DashboardPage() {
   const { team, ready } = useAuth();
   const router = useRouter();
   
-  const [badges, setBadges] = useState([]);
+  const [badges, setBadges] = useState(STATIC_ALL_BADGES);
   const [unlocked, setUnlocked] = useState({});
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -25,16 +37,17 @@ export default function DashboardPage() {
     setPageError("");
 
     try {
-      // 1. 独立且优先加载全局所有徽章（不依赖 teamId，确保 Vault 绝对不会显示 0）
+      // 1. 尝试从数据库拉取动态 badges，如果失败或为空则保留静态全量列表
       const badgeRes = await supabase
         .from("badges")
         .select("id, name, description, icon_url, photo_url, story_text")
         .order("id");
 
-      const badgeRows = badgeRes.data || [];
-      setBadges(badgeRows);
+      if (badgeRes.data && badgeRes.data.length > 0) {
+        setBadges(badgeRes.data);
+      }
 
-      // 2. 如果存在 teamId，再独立去查当前团队已解锁的记录
+      // 2. 独立拉取当前团队真正解锁的记录
       if (teamId) {
         const unlockRes = await supabase
           .from("team_badges")
@@ -50,12 +63,8 @@ export default function DashboardPage() {
         });
         setUnlocked(map);
       }
-      
-      return badgeRows;
     } catch (err) {
-      console.error("加载数据异常:", err);
-      setPageError("Failed to load badge data.");
-      return [];
+      console.error("加载解锁状态异常:", err);
     } finally {
       setLoading(false);
     }
@@ -89,7 +98,8 @@ export default function DashboardPage() {
     }
 
     await loadData();
-    const foundBadge = badges.find((item) => String(item.id) === String(result.badge_id));
+    const currentList = badges.length > 0 ? badges : STATIC_ALL_BADGES;
+    const foundBadge = currentList.find((item) => String(item.id) === String(result.badge_id));
     setCelebration({ 
       open: true, 
       badge: foundBadge || { id: result.badge_id, name: result?.badge_name, icon_url: result?.icon_url } 
@@ -108,6 +118,8 @@ export default function DashboardPage() {
       </div>
     );
   }
+
+  const activeBadges = badges.length > 0 ? badges : STATIC_ALL_BADGES;
 
   return (
     <AppShell title="UWA College Campus Tour" subtitle="Collect All Badges From every checkpoint">
@@ -132,13 +144,13 @@ export default function DashboardPage() {
 
       <div className="mt-8">
         <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-          Badge Vault ({badges.length})
+          Badge Vault ({activeBadges.length})
         </h2>
         
         {loading && <p className="mt-4 text-slate-500">Loading vault...</p>}
 
         <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {!loading && badges.map((badge) => {
+          {!loading && activeBadges.map((badge) => {
             const isUnlocked = Boolean(unlocked[String(badge.id)]);
             return (
               <BadgeCard
@@ -155,7 +167,7 @@ export default function DashboardPage() {
       <CelebrateOverlay
         open={celebration.open}
         badge={celebration.badge}
-        allBadges={badges}
+        allBadges={activeBadges}
         onClose={() => setCelebration({ open: false, badge: null })}
       />
     </AppShell>
