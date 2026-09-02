@@ -5,12 +5,15 @@ import { X, Sparkles } from "lucide-react";
 export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] }) {
   if (!open || !badge) return null;
 
-  // 🛡️ 终极安全网：如果当前传进来的 badge 里没有 icon_url，
-  // 我们就用它的 id 去 allBadges 列表里找，或者尝试匹配名字，把 icon_url 强行捞出来！
+  // 1. 先尝试直接取
   let iconSrc = badge.icon_url || badge.iconUrl;
   
+  // 2. 如果没有，用更宽松的条件去 allBadges 里面捞（支持数字/字符串ID互转、名称匹配）
   if (!iconSrc && allBadges.length > 0) {
-    const matched = allBadges.find(b => b.id === badge.id || b.name === badge.name);
+    const matched = allBadges.find(b => 
+      String(b.id) === String(badge.id) || 
+      (badge.name && b.name && b.name.trim().toLowerCase() === badge.name.trim().toLowerCase())
+    );
     if (matched) {
       iconSrc = matched.icon_url;
     }
@@ -44,7 +47,7 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
             {badge.name}
           </h3>
           
-          {/* 调试行：看看补救后有没有成功拿到 */}
+          {/* 实时状态：如果这里变成了链接，说明成功捞到了！ */}
           <p className="mt-2 text-[10px] text-yellow-300 break-all opacity-80">
             URL: {iconSrc || "【依旧未找到】"}
           </p>
