@@ -39,9 +39,13 @@ export default function DashboardPage() {
     }
 
     setBadges(badgeRows || []);
+    
+    // 💡 统一转换为字符串键名，彻底杜绝数字与字符串 ID 无法匹配导致无法点亮的问题
     const map = {};
     (unlockRows || []).forEach((row) => {
-      map[row.badge_id] = row.unlocked_at;
+      if (row?.badge_id != null) {
+        map[String(row.badge_id)] = row.unlocked_at;
+      }
     });
     setUnlocked(map);
     setLoading(false);
@@ -82,16 +86,13 @@ export default function DashboardPage() {
       };
     }
 
-    // 1. 强制重新加载最新数据
     const latestBadges = await loadData();
     const currentBadgeList = latestBadges?.length > 0 ? latestBadges : badges;
     
-    // 2. 用严格的字符串类型转换来精准匹配勋章
     const foundBadge = currentBadgeList.find(
       (item) => String(item.id) === String(result.badge_id)
     );
 
-    // 3. 确保弹窗拿到的对象绝对包含 icon_url
     const badgeToCelebrate = foundBadge || {
       id: result.badge_id,
       name: result?.badge_name,
@@ -154,7 +155,7 @@ export default function DashboardPage() {
               <BadgeCard
                 key={badge.id}
                 badge={badge}
-                unlockedAt={unlocked[badge.id]}
+                unlockedAt={unlocked[String(badge.id)]}
                 onClick={handleBadgeClick}
               />
             ))}
