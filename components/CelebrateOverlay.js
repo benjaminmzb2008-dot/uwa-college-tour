@@ -5,13 +5,17 @@ import { X, Sparkles } from "lucide-react";
 export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] }) {
   if (!open || !badge) return null;
 
+  // 🔍 核心调试：在控制台打印看看收到的 badge 和总表是什么样的
+  console.log("【CelebrateOverlay 调试】当前收到的 badge:", badge);
+  console.log("【CelebrateOverlay 调试】当前传入的 allBadges 列表:", allBadges);
+
   // 1. 先尝试直接取
   let iconSrc = badge.icon_url || badge.iconUrl;
   
-  // 2. 如果没有，用更宽松的条件去 allBadges 里面捞（支持数字/字符串ID互转、名称匹配）
+  // 2. 宽松匹配
   if (!iconSrc && allBadges.length > 0) {
     const matched = allBadges.find(b => 
-      String(b.id) === String(badge.id) || 
+      String(b.id) === String(badge.id || badge.badge_id) || 
       (badge.name && b.name && b.name.trim().toLowerCase() === badge.name.trim().toLowerCase())
     );
     if (matched) {
@@ -47,9 +51,8 @@ export default function CelebrateOverlay({ open, badge, onClose, allBadges = [] 
             {badge.name}
           </h3>
           
-          {/* 实时状态：如果这里变成了链接，说明成功捞到了！ */}
           <p className="mt-2 text-[10px] text-yellow-300 break-all opacity-80">
-            URL: {iconSrc || "【依旧未找到】"}
+            URL: {iconSrc || "【依旧未找到，请按F12看控制台日志】"}
           </p>
         </div>
 
