@@ -16,7 +16,7 @@ export default function LoginPage() {
   async function handleSubmit(e) {
     e.preventDefault();
     if (!teamName.trim() || !accessCode.trim()) {
-      setError("Please fill in both Team Number and Passcode.");
+      setError("Please fill in both Team Number and Password.");
       return;
     }
 
@@ -65,7 +65,7 @@ export default function LoginPage() {
 
           <div>
             <label className="block text-xs font-bold uppercase tracking-wider text-slate-500 mb-2">
-              Passcode
+              Password
             </label>
             <div className="relative">
               <input
