@@ -11,14 +11,17 @@ import { supabase } from "@/lib/supabase";
 
 // 🛡️ 完整的静态校园徽章列表（确保 Vault 绝对不会为 0，并且能完美匹配所有关卡）
 const STATIC_ALL_BADGES = [
-  { id: 1, name: "224 - ENGINEERING BUILDING", description: "Checkpoint at Engineering Building", icon_url: "" },
-  { id: 2, name: "REID LIBRARY", description: "Checkpoint at Reid Library", icon_url: "" },
-  { id: 3, name: "WINTHROP HALL", description: "Checkpoint at Winthrop Hall", icon_url: "" },
-  { id: 4, name: "BUSINESS SCHOOL", description: "Checkpoint at Business School", icon_url: "" },
-  { id: 5, name: "SPORTS CENTRE", description: "Checkpoint at Sports Centre", icon_url: "" },
-  { id: 6, name: "MCLARTY WING", description: "Checkpoint at McLarty Wing", icon_url: "" },
-  { id: 7, name: "STUDENT CENTRAL", description: "Checkpoint at Student Central", icon_url: "" },
-  { id: 8, name: "SEABORNE HILTON", description: "Checkpoint at Seaborne Hilton", icon_url: "" }
+  { id: 1, name: "347 - Psychology Building", description: "Checkpoint at Psychology Building", icon_url: "" },
+  { id: 2, name: "446 - Barry J Marshall Library", description: "Checkpoint at Barry J Marshall Library", icon_url: "" },
+  { id: 3, name: "227 - Sanders Building", description: "Checkpoint at Sanders Building", icon_url: "" },
+  { id: 4, name: "235 - General Purpose Building 3", description: "Checkpoint at General Purpose Building", icon_url: "" },
+  { id: 5, name: "275 - Ezone Central", description: "Checkpoint at Ezone", icon_url: "" },
+  { id: 6, name: "224 - Engineering Building", description: "Checkpoint at Engineering Building", icon_url: "" },
+  { id: 7, name: "274 - Irwin Street Building", description: "Checkpoint at Irwin Street Building", icon_url: "" },
+  { id: 8, name: "106 - Arts Building", description: "Checkpoint at Arts Building", icon_url: "" }
+  { id: 9, name: "139 - Reid Library", description: "Checkpoint at Reid Library", icon_url: "" }
+  { id: 10, name: "101 - Winthrop Hall", description: "Checkpoint at Winthrop Hall", icon_url: "" }
+  { id: 11, name: "245 - Physics Building", description: "Checkpoint at Physics Building", icon_url: "" }
 ];
 
 export default function DashboardPage() {
