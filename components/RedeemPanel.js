@@ -38,7 +38,7 @@ export default function RedeemPanel({ onRedeem, loading }) {
         <input
           value={code}
           onChange={(e) => setCode(e.target.value)}
-          placeholder="BDG-XXXX-1234"
+          placeholder="X-XXX"
           autoComplete="off"
           className="w-full rounded-2xl bg-slate-50 px-4 py-4 font-mono text-lg font-bold uppercase tracking-[0.18em] text-slate-900 border border-slate-200 focus:border-navy focus:bg-white focus:outline-none cursor-text placeholder:text-slate-400 placeholder:font-normal placeholder:tracking-normal transition"
         />
