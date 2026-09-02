@@ -22,38 +22,34 @@ export default function DashboardPage() {
   const teamId = team?.id || team?.team_id || team?.uuid;
 
   const loadData = useCallback(async () => {
-    if (!teamId) {
-      setLoading(false);
-      return [];
-    }
     setPageError("");
 
     try {
-      // 1. 获取全局所有的徽章（确保不漏掉任何一个）
+      // 1. 独立且优先加载全局所有徽章（不依赖 teamId，确保 Vault 绝对不会显示 0）
       const badgeRes = await supabase
         .from("badges")
         .select("id, name, description, icon_url, photo_url, story_text")
         .order("id");
 
-      // 2. 严格只获取当前登录 team_id 对应的已解锁记录
-      const unlockRes = await supabase
-        .from("team_badges")
-        .select("badge_id, unlocked_at")
-        .eq("team_id", teamId);
-
       const badgeRows = badgeRes.data || [];
-      const unlockRows = unlockRes.data || [];
-
       setBadges(badgeRows);
-      
-      // 建立精准的解锁映射
-      const map = {};
-      unlockRows.forEach((row) => {
-        if (row?.badge_id != null) {
-          map[String(row.badge_id)] = row.unlocked_at || true;
-        }
-      });
-      setUnlocked(map);
+
+      // 2. 如果存在 teamId，再独立去查当前团队已解锁的记录
+      if (teamId) {
+        const unlockRes = await supabase
+          .from("team_badges")
+          .select("badge_id, unlocked_at")
+          .eq("team_id", teamId);
+
+        const unlockRows = unlockRes.data || [];
+        const map = {};
+        unlockRows.forEach((row) => {
+          if (row?.badge_id != null) {
+            map[String(row.badge_id)] = row.unlocked_at || true;
+          }
+        });
+        setUnlocked(map);
+      }
       
       return badgeRows;
     } catch (err) {
@@ -74,7 +70,6 @@ export default function DashboardPage() {
     loadData();
   }, [ready, team, router, loadData]);
 
-  // 已解锁数量严格由当前团队的解锁字典决定
   const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
 
   async function handleRedeem(codeText) {
