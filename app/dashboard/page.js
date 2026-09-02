@@ -9,7 +9,7 @@ import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
-// 🛡️ 完整的静态校园徽章列表（确保 Vault 绝对不会为 0，并且能完美匹配所有关卡）
+// 🛡️ 完整的静态校园徽章列表（已补全所有对象的逗号分隔符）
 const STATIC_ALL_BADGES = [
   { id: 1, name: "347 - Psychology Building", description: "Checkpoint at Psychology Building", icon_url: "" },
   { id: 2, name: "446 - Barry J Marshall Library", description: "Checkpoint at Barry J Marshall Library", icon_url: "" },
@@ -18,9 +18,9 @@ const STATIC_ALL_BADGES = [
   { id: 5, name: "275 - Ezone Central", description: "Checkpoint at Ezone", icon_url: "" },
   { id: 6, name: "224 - Engineering Building", description: "Checkpoint at Engineering Building", icon_url: "" },
   { id: 7, name: "274 - Irwin Street Building", description: "Checkpoint at Irwin Street Building", icon_url: "" },
-  { id: 8, name: "106 - Arts Building", description: "Checkpoint at Arts Building", icon_url: "" }
-  { id: 9, name: "139 - Reid Library", description: "Checkpoint at Reid Library", icon_url: "" }
-  { id: 10, name: "101 - Winthrop Hall", description: "Checkpoint at Winthrop Hall", icon_url: "" }
+  { id: 8, name: "106 - Arts Building", description: "Checkpoint at Arts Building", icon_url: "" },
+  { id: 9, name: "139 - Reid Library", description: "Checkpoint at Reid Library", icon_url: "" },
+  { id: 10, name: "101 - Winthrop Hall", description: "Checkpoint at Winthrop Hall", icon_url: "" },
   { id: 11, name: "245 - Physics Building", description: "Checkpoint at Physics Building", icon_url: "" }
 ];
 
