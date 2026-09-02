@@ -3,6 +3,9 @@
 import { CheckCircle2, Lock } from "lucide-react";
 
 export default function BadgeCard({ badge, unlockedAt, onClick }) {
+  // 👈 加上这行，在 F12 控制台里打印看看这个勋章到底有没有 icon_url
+  console.log("当前渲染的 Badge 数据:", badge);
+
   const isUnlocked = Boolean(unlockedAt);
 
   return (
