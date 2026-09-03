@@ -218,7 +218,7 @@ export default function DashboardPage() {
       subtitle={isAdmin ? "Overview of all teams and badge progress matrix" : "Collect All Badges From every checkpoint"}
     >
       
-      <div className="mb-6 grid gap-4 sm:grid-cols-2">
+      <div className={`mb-6 grid gap-4 ${isAdmin ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
         <div className="rounded-3xl bg-white p-5 shadow-card">
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
             {isAdmin ? "Total Active Teams" : "Badges unlocked"}
@@ -227,20 +227,16 @@ export default function DashboardPage() {
             {isAdmin ? rankedTeams.length : unlockedCount}
           </p>
         </div>
-        <div className="rounded-3xl bg-[#29327c] p-5 text-white shadow-card">
-          <p className="text-xs font-bold uppercase tracking-widest text-gold">Mission</p>
-          <div className="mt-1 font-display text-lg leading-snug space-y-1">
-            {isAdmin ? (
-              <p>Admin Leaderboard Active — Top team is ranked #1</p>
-            ) : (
-              <>
-                <p>Explore the campus AQAP!</p>
-                <p>Complete the challenges at Checkpoint!</p>
-                <p>Go UWACer!</p>
-              </>
-            )}
+        {!isAdmin && (
+          <div className="rounded-3xl bg-[#29327c] p-5 text-white shadow-card">
+            <p className="text-xs font-bold uppercase tracking-widest text-gold">Mission</p>
+            <div className="mt-1 font-display text-lg leading-snug space-y-1">
+              <p>Explore the campus AQAP!</p>
+              <p>Complete the challenges at Checkpoint!</p>
+              <p>Go UWACer!</p>
+            </div>
           </div>
-        </div>
+        )}
       </div>
 
       {!isAdmin && <RedeemPanel onRedeem={handleRedeem} />}
@@ -250,7 +246,7 @@ export default function DashboardPage() {
       {isAdmin ? (
         <div className="mt-8 space-y-6">
           <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-            Team Progress Matrix & Leaderboard
+            Leaderboard
           </h2>
 
           {loading && <p className="text-slate-500">Loading matrix...</p>}
@@ -270,7 +266,6 @@ export default function DashboardPage() {
                       <th key={badge.id} className="py-3 px-4 text-center" title={badge.name}>
                         <div className="flex flex-col items-center gap-2">
                           {badge.icon_url ? (
-                            /* 🔍 照片尺寸在原先基础上放大50% (从 h-16 w-16 变为 h-24 w-24)，保持正圆裁剪和无白边 */
                             <div className="h-24 w-24 aspect-square shrink-0 overflow-hidden rounded-full">
                               <img src={badge.icon_url} alt="" className="h-full w-full object-cover block" />
                             </div>
@@ -302,7 +297,7 @@ export default function DashboardPage() {
                             <div>
                               <p className="font-display font-bold text-[#29327c] text-base flex items-center gap-2">
                                 {t.team_name}
-                                {isFirst && <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full uppercase tracking-wider">👑 Leader</span>}
+                                {isFirst && <span>👑</span>}
                               </p>
                             </div>
                           </div>
