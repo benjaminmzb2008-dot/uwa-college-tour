@@ -5,16 +5,17 @@ export default function BadgeCard({ badge, unlockedAt, onClick }) {
 
   return (
     <div
-      onClick={() => onClick(badge)}
-      className={`group relative flex flex-col justify-between rounded-3xl bg-white p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer border-2 ${
-        isUnlocked ? "border-mint/30" : "border-slate-100"
+      onClick={() => isUnlocked && onClick(badge)}
+      className={`group relative flex flex-col justify-between rounded-3xl bg-white p-6 shadow-card transition-all duration-300 border-2 ${
+        isUnlocked 
+          ? "border-mint/30 hover:-translate-y-1 hover:shadow-lg cursor-pointer" 
+          : "border-slate-100 opacity-90 cursor-not-allowed"
       }`}
     >
       {/* 顶部状态与大号圆形图标 */}
       <div className="flex items-start justify-between">
-        {/* 放大且变成圆形的 Icon 区域 */}
-        <div className={`relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md transition-transform duration-300 group-hover:scale-105 ${
-          isUnlocked ? "bg-[#29327c]" : "bg-slate-100 grayscale opacity-70"
+        <div className={`relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full shadow-md transition-transform duration-300 ${
+          isUnlocked ? "bg-[#29327c] group-hover:scale-105" : "bg-slate-100 grayscale opacity-70"
         }`}>
           {badge.icon_url ? (
             <img
@@ -42,20 +43,26 @@ export default function BadgeCard({ badge, unlockedAt, onClick }) {
         </div>
       </div>
 
-      {/* 文本信息 */}
+      {/* 文本信息：未解锁时显示 XXXXXX */}
       <div className="mt-5">
         <h3 className="font-display text-lg font-extrabold uppercase text-[#29327c] line-clamp-1">
-          {badge.name}
+          {isUnlocked ? badge.name : "XXXXXX"}
         </h3>
         <p className="mt-1 text-sm text-slate-500 line-clamp-2">
-          {badge.description}
+          {isUnlocked ? badge.description : "Complete the checkpoint to unlock this badge."}
         </p>
       </div>
 
-      {/* 底部引导 */}
-      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-[#29327c]">
-        <span>Click to view story</span>
-        <span className="transition-transform duration-300 group-hover:translate-x-1">→</span>
+      {/* 底部引导：未解锁时不显示可点击提示 */}
+      <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold uppercase tracking-wider text-slate-400">
+        {isUnlocked ? (
+          <>
+            <span className="group-hover:text-[#29327c]">Click to view story</span>
+            <span className="transition-transform duration-300 group-hover:translate-x-1 group-hover:text-[#29327c]">→</span>
+          </>
+        ) : (
+          <span className="text-slate-300">Locked Checkpoint</span>
+        )}
       </div>
     </div>
   );
