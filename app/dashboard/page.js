@@ -85,9 +85,8 @@ export default function DashboardPage() {
   const [badges, setBadges] = useState(STATIC_ALL_BADGES);
   const [unlocked, setUnlocked] = useState({});
   
-  // 👑 管理员专属状态
-  const [allTeams, setAllTeams] = useState([]);
-  const [allTeamsUnlocked, setAllTeamsUnlocked] = useState({}); // { teamId: { badgeId: unlocked_at } }
+  // 👑 管理员专属状态：直接从 team_badges 聚合所有团队数据
+  const [teamRows, setTeamRows] = useState([]);
 
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
@@ -95,7 +94,7 @@ export default function DashboardPage() {
 
   const teamId = team?.id || team?.team_id || team?.uuid;
   
-  // 🔍 判定是否为 Admin
+  // 🔍 判断是否为 Admin
   const isAdmin = Boolean(team?.is_admin || team?.role === 'admin' || team?.name?.toLowerCase() === 'admin');
 
   const loadData = useCallback(async () => {
@@ -112,25 +111,13 @@ export default function DashboardPage() {
       }
 
       if (isAdmin) {
-        const teamsRes = await supabase.from("teams").select("*").order("name");
-        if (teamsRes.data) {
-          setAllTeams(teamsRes.data);
-        }
-
-        const allUnlocksRes = await supabase.from("team_badges").select("team_id, badge_id, unlocked_at");
+        // 👑 管理员：直接拉取 team_badges 表里的所有行数据
+        const allUnlocksRes = await supabase.from("team_badges").select("team_id, team_name, badge_id, unlocked_at");
         if (allUnlocksRes.data) {
-          const map = {};
-          allUnlocksRes.data.forEach((row) => {
-            if (row?.team_id && row?.badge_id != null) {
-              if (!map[row.team_id]) {
-                map[row.team_id] = {};
-              }
-              map[row.team_id][String(row.badge_id)] = row.unlocked_at || true;
-            }
-          });
-          setAllTeamsUnlocked(map);
+          setTeamRows(allUnlocksRes.data);
         }
       } else if (teamId) {
+        // 🛡️ 普通团队：只拉取当前团队的解锁记录
         const unlockRes = await supabase
           .from("team_badges")
           .select("badge_id, unlocked_at")
@@ -171,15 +158,35 @@ export default function DashboardPage() {
 
   const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
 
-  // 👑 管理员视角：对所有团队按解锁数量降序排序（第一名排最前）
+  // 👑 管理员视角：根据 team_rows 归纳出各个团队的解锁情况，并按总数降序排列
   const rankedTeams = useMemo(() => {
     if (!isAdmin) return [];
-    return [...allTeams].sort((a, b) => {
-      const aUnlocks = Object.keys(allTeamsUnlocked[a.id] || {}).length;
-      const bUnlocks = Object.keys(allTeamsUnlocked[b.id] || {}).length;
-      return bUnlocks - aUnlocks; // 降序：解得越多的排越前面
+    const map = {};
+
+    teamRows.forEach((row) => {
+      const tName = row.team_name || row.team_id || "Unknown Team";
+      if (!map[tName]) {
+        map[tName] = {
+          team_id: row.team_id,
+          team_name: tName,
+          badges: {}
+        };
+      }
+      if (row.badge_id != null) {
+        map[tName].badges[String(row.badge_id)] = row.unlocked_at || true;
+      }
     });
-  }, [allTeams, allTeamsUnlocked, isAdmin]);
+
+    const list = Object.values(map);
+    // 按解锁数量降序（多的排前面）
+    list.sort((a, b) => {
+      const aCount = Object.keys(a.badges).length;
+      const bCount = Object.keys(b.badges).length;
+      return bCount - aCount;
+    });
+
+    return list;
+  }, [teamRows, isAdmin]);
 
   async function handleRedeem(codeText) {
     if (!teamId) return { success: false, message: "Team ID not found." };
@@ -224,10 +231,10 @@ export default function DashboardPage() {
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl bg-white p-5 shadow-card">
           <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
-            {isAdmin ? "Total Teams Registered" : "Badges unlocked"}
+            {isAdmin ? "Total Active Teams" : "Badges unlocked"}
           </p>
           <p className="mt-1 font-display text-2xl uppercase text-mint">
-            {isAdmin ? allTeams.length : unlockedCount}
+            {isAdmin ? rankedTeams.length : unlockedCount}
           </p>
         </div>
         <div className="rounded-3xl bg-[#29327c] p-5 text-white shadow-card">
@@ -250,22 +257,20 @@ export default function DashboardPage() {
 
       {pageError && <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{pageError}</p>}
 
-      {/* 👑 管理员专属：一眼看清所有组解锁情况的矩阵排行榜 */}
+      {/* 👑 管理员视角：通过 team_badges 渲染的矩阵排行榜 */}
       {isAdmin ? (
         <div className="mt-8 space-y-6">
-          <div className="flex items-center justify-between">
-            <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-              Team Progress Matrix & Leaderboard
-            </h2>
-          </div>
+          <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
+            Team Progress Matrix & Leaderboard
+          </h2>
 
           {loading && <p className="text-slate-500">Loading matrix...</p>}
 
-          {!loading && allTeams.length === 0 && (
-            <p className="text-sm text-slate-400">No teams found in the database.</p>
+          {!loading && rankedTeams.length === 0 && (
+            <p className="text-sm text-slate-400">No teams have unlocked any badges yet.</p>
           )}
 
-          {!loading && allTeams.length > 0 && (
+          {!loading && rankedTeams.length > 0 && (
             <div className="overflow-x-auto rounded-3xl bg-white p-6 shadow-card border border-slate-100">
               <table className="w-full text-left border-collapse">
                 <thead>
@@ -288,12 +293,11 @@ export default function DashboardPage() {
                 </thead>
                 <tbody className="divide-y divide-slate-50">
                   {rankedTeams.map((t, index) => {
-                    const teamUnlocks = allTeamsUnlocked[t.id] || {};
-                    const score = Object.keys(teamUnlocks).length;
+                    const score = Object.keys(t.badges).length;
                     const isFirst = index === 0 && score > 0;
 
                     return (
-                      <tr key={t.id} className={`hover:bg-slate-50/80 transition-colors ${isFirst ? 'bg-amber-50/40' : ''}`}>
+                      <tr key={t.team_id || t.team_name} className={`hover:bg-slate-50/80 transition-colors ${isFirst ? 'bg-amber-50/40' : ''}`}>
                         {/* 团队名称与排名 */}
                         <td className="py-4 px-4">
                           <div className="flex items-center gap-3">
@@ -306,10 +310,10 @@ export default function DashboardPage() {
                             </span>
                             <div>
                               <p className="font-display font-bold text-[#29327c] text-base flex items-center gap-2">
-                                {t.name || `Team ${t.id}`}
+                                {t.team_name}
                                 {isFirst && <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full uppercase tracking-wider">👑 Leader</span>}
                               </p>
-                              <p className="text-xs text-slate-400">ID: {t.id}</p>
+                              <p className="text-xs text-slate-400">ID: {t.team_id}</p>
                             </div>
                           </div>
                         </td>
@@ -323,7 +327,7 @@ export default function DashboardPage() {
 
                         {/* 各个 Badge 的解锁打钩状态 */}
                         {activeBadges.map((badge) => {
-                          const isUnlocked = Boolean(teamUnlocks[String(badge.id)]);
+                          const isUnlocked = Boolean(t.badges[String(badge.id)]);
                           return (
                             <td key={badge.id} className="py-4 px-2 text-center">
                               {isUnlocked ? (
