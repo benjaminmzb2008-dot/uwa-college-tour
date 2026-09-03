@@ -268,13 +268,16 @@ export default function DashboardPage() {
                     <th className="py-3 px-4 text-center">Score</th>
                     {activeBadges.map((badge, idx) => (
                       <th key={badge.id} className="py-3 px-2 text-center" title={badge.name}>
-                        <div className="flex flex-col items-center gap-1">
+                        <div className="flex flex-col items-center gap-1.5">
                           {badge.icon_url ? (
-                            <img src={badge.icon_url} alt="" className="h-8 w-8 rounded-full object-cover shadow-sm" />
+                            /* 🔍 外层加 overflow-hidden 和 rounded-full 强制让图片呈现完美正圆形裁剪 */
+                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full shadow-md border border-slate-100 bg-[#29327c] flex items-center justify-center">
+                              <img src={badge.icon_url} alt="" className="h-full w-full object-cover" />
+                            </div>
                           ) : (
-                            <span className="text-base">🏆</span>
+                            <span className="text-2xl">🏆</span>
                           )}
-                          <span className="text-[10px] text-slate-500">#{idx + 1}</span>
+                          <span className="text-[10px] text-slate-500 font-bold">#{idx + 1}</span>
                         </div>
                       </th>
                     ))}
@@ -314,13 +317,13 @@ export default function DashboardPage() {
                         {activeBadges.map((badge) => {
                           const isUnlocked = Boolean(t.badges[String(badge.id)]);
                           return (
-                            <td key={badge.id} className="py-4 px-2 text-center">
+                            <td key={badge.id} className="py-4 px-2 text-center align-middle">
                               {isUnlocked ? (
-                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint/15 text-mint font-bold shadow-sm" title="Unlocked">
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-mint/15 text-mint font-bold shadow-sm text-sm" title="Unlocked">
                                   ✓
                                 </span>
                               ) : (
-                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-300 text-xs" title="Locked">
+                                <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-slate-100 text-slate-300 text-sm" title="Locked">
                                   ·
                                 </span>
                               )}
