@@ -9,7 +9,7 @@ import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
 import { supabase } from "@/lib/supabase";
 
-// 🛡️ 所有 11 个校园徽章已全部配置好 Supabase 云端图片链接
+// 🛡️ 所有的校园徽章静态列表
 const STATIC_ALL_BADGES = [
   { 
     id: 1, 
@@ -136,6 +136,12 @@ export default function DashboardPage() {
   }, [ready, team, router, loadData]);
 
   const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
+  const activeBadges = badges.length > 0 ? badges : STATIC_ALL_BADGES;
+
+  // 筛选出只属于已解锁的 badges
+  const unlockedBadges = useMemo(() => {
+    return activeBadges.filter((badge) => Boolean(unlocked[String(badge.id)]));
+  }, [activeBadges, unlocked]);
 
   async function handleRedeem(codeText) {
     if (!teamId) return { success: false, message: "Team ID not found." };
@@ -175,8 +181,6 @@ export default function DashboardPage() {
     );
   }
 
-  const activeBadges = badges.length > 0 ? badges : STATIC_ALL_BADGES;
-
   return (
     <AppShell title="UWA College Campus Tour" subtitle="Collect All Badges From every checkpoint">
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -200,23 +204,24 @@ export default function DashboardPage() {
 
       <div className="mt-8">
         <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-          Badge Vault ({activeBadges.length})
+          Badge Vault ({unlockedBadges.length})
         </h2>
         
         {loading && <p className="mt-4 text-slate-500">Loading vault...</p>}
 
+        {!loading && unlockedBadges.length === 0 && (
+          <p className="mt-4 text-sm text-slate-400">No badges unlocked yet. Enter a code above to collect your first badge!</p>
+        )}
+
         <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {!loading && activeBadges.map((badge) => {
-            const isUnlocked = Boolean(unlocked[String(badge.id)]);
-            return (
-              <BadgeCard
-                key={badge.id}
-                badge={badge}
-                unlockedAt={isUnlocked ? unlocked[String(badge.id)] : null}
-                onClick={handleBadgeClick}
-              />
-            );
-          })}
+          {!loading && unlockedBadges.map((badge) => (
+            <BadgeCard
+              key={badge.id}
+              badge={badge}
+              unlockedAt={unlocked[String(badge.id)]}
+              onClick={handleBadgeClick}
+            />
+          ))}
         </div>
       </div>
 
