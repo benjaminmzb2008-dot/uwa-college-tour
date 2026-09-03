@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import AppShell from "@/components/AppShell";
-import BadgeCard from "@/components/BadgeCard";
 import CelebrateOverlay from "@/components/CelebrateOverlay";
 import RedeemPanel from "@/components/RedeemPanel";
 import { useAuth } from "@/context/AuthContext";
@@ -86,7 +85,7 @@ export default function DashboardPage() {
   const [badges, setBadges] = useState(STATIC_ALL_BADGES);
   const [unlocked, setUnlocked] = useState({});
   
-  // 👑 管理员专属状态：保存所有团队及全量解锁数据
+  // 👑 管理员专属状态
   const [allTeams, setAllTeams] = useState([]);
   const [allTeamsUnlocked, setAllTeamsUnlocked] = useState({}); // { teamId: { badgeId: unlocked_at } }
 
@@ -96,14 +95,13 @@ export default function DashboardPage() {
 
   const teamId = team?.id || team?.team_id || team?.uuid;
   
-  // 🔍 判断当前账号是否为 Admin（可根据你的数据库字段调整，例如 team.is_admin 或 team.role === 'admin' 或名字匹配）
+  // 🔍 判定是否为 Admin
   const isAdmin = Boolean(team?.is_admin || team?.role === 'admin' || team?.name?.toLowerCase() === 'admin');
 
   const loadData = useCallback(async () => {
     setPageError("");
 
     try {
-      // 1. 拉取徽章基础数据
       const badgeRes = await supabase
         .from("badges")
         .select("id, name, description, icon_url, photo_url, story_text")
@@ -114,7 +112,6 @@ export default function DashboardPage() {
       }
 
       if (isAdmin) {
-        // 👑 如果是管理员：拉取所有团队及所有团队的解锁记录
         const teamsRes = await supabase.from("teams").select("*").order("name");
         if (teamsRes.data) {
           setAllTeams(teamsRes.data);
@@ -134,7 +131,6 @@ export default function DashboardPage() {
           setAllTeamsUnlocked(map);
         }
       } else if (teamId) {
-        // 🛡️ 普通团队：只拉取当前团队的解锁记录
         const unlockRes = await supabase
           .from("team_badges")
           .select("badge_id, unlocked_at")
@@ -175,6 +171,16 @@ export default function DashboardPage() {
 
   const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
 
+  // 👑 管理员视角：对所有团队按解锁数量降序排序（第一名排最前）
+  const rankedTeams = useMemo(() => {
+    if (!isAdmin) return [];
+    return [...allTeams].sort((a, b) => {
+      const aUnlocks = Object.keys(allTeamsUnlocked[a.id] || {}).length;
+      const bUnlocks = Object.keys(allTeamsUnlocked[b.id] || {}).length;
+      return bUnlocks - aUnlocks; // 降序：解得越多的排越前面
+    });
+  }, [allTeams, allTeamsUnlocked, isAdmin]);
+
   async function handleRedeem(codeText) {
     if (!teamId) return { success: false, message: "Team ID not found." };
     const { data, error } = await supabase.rpc("redeem_badge_code", {
@@ -200,10 +206,6 @@ export default function DashboardPage() {
     return { success: true };
   }
 
-  function handleBadgeClick(badge) {
-    setCelebration({ open: true, badge });
-  }
-
   if (!ready || !team) {
     return (
       <div className="flex min-h-screen items-center justify-center bg-ice">
@@ -213,7 +215,10 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppShell title={isAdmin ? "Admin Overview: All Teams" : "UWA College Campus Tour"} subtitle={isAdmin ? "Monitor badge progress across all campus teams" : "Collect All Badges From every checkpoint"}>
+    <AppShell 
+      title={isAdmin ? "Admin Leaderboard & Matrix" : "UWA College Campus Tour"} 
+      subtitle={isAdmin ? "Overview of all teams and badge progress matrix" : "Collect All Badges From every checkpoint"}
+    >
       
       {/* 顶部统计面板 */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
@@ -229,7 +234,7 @@ export default function DashboardPage() {
           <p className="text-xs font-bold uppercase tracking-widest text-gold">Mission</p>
           <div className="mt-1 font-display text-lg leading-snug space-y-1">
             {isAdmin ? (
-              <p>Viewing Admin Dashboard mode.</p>
+              <p>Admin Leaderboard Active — Top team is ranked #1</p>
             ) : (
               <>
                 <p>Explore the campus AQAP!</p>
@@ -241,65 +246,108 @@ export default function DashboardPage() {
         </div>
       </div>
 
-      {/* 普通用户才显示兑换面板，Admin 可以选择不显示或保留 */}
       {!isAdmin && <RedeemPanel onRedeem={handleRedeem} />}
 
       {pageError && <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{pageError}</p>}
 
-      {/* 👑 管理员专属视图：展示所有团队及其解锁情况 */}
+      {/* 👑 管理员专属：一眼看清所有组解锁情况的矩阵排行榜 */}
       {isAdmin ? (
-        <div className="mt-8 space-y-8">
-          <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-            All Teams Progress ({allTeams.length})
-          </h2>
+        <div className="mt-8 space-y-6">
+          <div className="flex items-center justify-between">
+            <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
+              Team Progress Matrix & Leaderboard
+            </h2>
+          </div>
 
-          {loading && <p className="text-slate-500">Loading all teams data...</p>}
+          {loading && <p className="text-slate-500">Loading matrix...</p>}
 
           {!loading && allTeams.length === 0 && (
             <p className="text-sm text-slate-400">No teams found in the database.</p>
           )}
 
-          {allTeams.map((t) => {
-            const teamUnlocks = allTeamsUnlocked[t.id] || {};
-            const teamUnlockedList = activeBadges.filter((b) => Boolean(teamUnlocks[String(b.id)]));
+          {!loading && allTeams.length > 0 && (
+            <div className="overflow-x-auto rounded-3xl bg-white p-6 shadow-card border border-slate-100">
+              <table className="w-full text-left border-collapse">
+                <thead>
+                  <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
+                    <th className="py-3 px-4">Rank & Team</th>
+                    <th className="py-3 px-4 text-center">Score</th>
+                    {activeBadges.map((badge, idx) => (
+                      <th key={badge.id} className="py-3 px-2 text-center" title={badge.name}>
+                        <div className="flex flex-col items-center gap-1">
+                          {badge.icon_url ? (
+                            <img src={badge.icon_url} alt="" className="h-8 w-8 rounded-full object-cover shadow-sm" />
+                          ) : (
+                            <span className="text-base">🏆</span>
+                          )}
+                          <span className="text-[10px] text-slate-500">#{idx + 1}</span>
+                        </div>
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-slate-50">
+                  {rankedTeams.map((t, index) => {
+                    const teamUnlocks = allTeamsUnlocked[t.id] || {};
+                    const score = Object.keys(teamUnlocks).length;
+                    const isFirst = index === 0 && score > 0;
 
-            return (
-              <div key={t.id} className="rounded-3xl bg-white p-6 shadow-card border border-slate-100">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
-                  <div>
-                    <h3 className="font-display text-lg font-bold text-[#29327c] uppercase">
-                      {t.name || `Team ID: ${t.id}`}
-                    </h3>
-                    <p className="text-xs text-slate-400">Team ID: {t.id}</p>
-                  </div>
-                  <span className="inline-flex items-center rounded-full bg-mint/10 px-3 py-1 text-xs font-bold text-mint uppercase">
-                    Unlocked: {teamUnlockedList.length} / {activeBadges.length}
-                  </span>
-                </div>
+                    return (
+                      <tr key={t.id} className={`hover:bg-slate-50/80 transition-colors ${isFirst ? 'bg-amber-50/40' : ''}`}>
+                        {/* 团队名称与排名 */}
+                        <td className="py-4 px-4">
+                          <div className="flex items-center gap-3">
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                              index === 0 ? 'bg-gold text-white shadow-sm' : 
+                              index === 1 ? 'bg-slate-300 text-white' : 
+                              index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="font-display font-bold text-[#29327c] text-base flex items-center gap-2">
+                                {t.name || `Team ${t.id}`}
+                                {isFirst && <span className="text-xs bg-gold/20 text-gold px-2 py-0.5 rounded-full uppercase tracking-wider">👑 Leader</span>}
+                              </p>
+                              <p className="text-xs text-slate-400">ID: {t.id}</p>
+                            </div>
+                          </div>
+                        </td>
 
-                {/* 该团队解锁的徽章列表 */}
-                <div className="mt-4">
-                  {teamUnlockedList.length === 0 ? (
-                    <p className="text-sm text-slate-400 italic">No badges unlocked by this team yet.</p>
-                  ) : (
-                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
-                      {teamUnlockedList.map((badge) => (
-                        <BadgeCard
-                          key={badge.id}
-                          badge={badge}
-                          unlockedAt={teamUnlocks[String(badge.id)]}
-                          onClick={handleBadgeClick}
-                        />
-                      ))}
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
+                        {/* 总得分 */}
+                        <td className="py-4 px-4 text-center">
+                          <span className="font-display font-bold text-mint text-lg">
+                            {score} <span className="text-xs text-slate-400 font-normal">/ {activeBadges.length}</span>
+                          </span>
+                        </td>
+
+                        {/* 各个 Badge 的解锁打钩状态 */}
+                        {activeBadges.map((badge) => {
+                          const isUnlocked = Boolean(teamUnlocks[String(badge.id)]);
+                          return (
+                            <td key={badge.id} className="py-4 px-2 text-center">
+                              {isUnlocked ? (
+                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-mint/15 text-mint font-bold shadow-sm" title="Unlocked">
+                                  ✓
+                                </span>
+                              ) : (
+                                <span className="inline-flex h-8 w-8 items-center justify-center rounded-full bg-slate-100 text-slate-300 text-xs" title="Locked">
+                                  ·
+                                </span>
+                              )}
+                            </td>
+                          );
+                        })}
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+            </div>
+          )}
         </div>
       ) : (
-        /* 🛡️ 普通团队视图：只展示当前团队已解锁的徽章 */
+        /* 🛡️ 普通团队视角 */
         <div className="mt-8">
           <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
             Badge Vault ({unlockedBadges.length})
@@ -313,12 +361,33 @@ export default function DashboardPage() {
 
           <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
             {!loading && unlockedBadges.map((badge) => (
-              <BadgeCard
+              <div
                 key={badge.id}
-                badge={badge}
-                unlockedAt={unlocked[String(badge.id)]}
-                onClick={handleBadgeClick}
-              />
+                onClick={() => setCelebration({ open: true, badge })}
+                className="group relative flex flex-col justify-between rounded-3xl bg-white p-6 shadow-card transition-all duration-300 hover:-translate-y-1 hover:shadow-lg cursor-pointer border-2 border-mint/30"
+              >
+                <div className="flex items-start justify-between">
+                  <div className="relative flex h-20 w-20 shrink-0 items-center justify-center overflow-hidden rounded-full bg-[#29327c] shadow-md transition-transform duration-300 group-hover:scale-105">
+                    {badge.icon_url ? (
+                      <img src={badge.icon_url} alt={badge.name} className="h-full w-full object-cover" />
+                    ) : (
+                      <span className="text-3xl">🏆</span>
+                    )}
+                  </div>
+                  <span className="inline-flex items-center gap-1 rounded-full bg-mint/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-mint">
+                    <span className="h-1.5 w-1.5 rounded-full bg-mint"></span>
+                    Unlocked
+                  </span>
+                </div>
+                <div className="mt-5">
+                  <h3 className="font-display text-lg font-extrabold uppercase text-[#29327c] line-clamp-1">{badge.name}</h3>
+                  <p className="mt-1 text-sm text-slate-500 line-clamp-2">{badge.description}</p>
+                </div>
+                <div className="mt-4 flex items-center justify-between border-t border-slate-100 pt-4 text-xs font-bold uppercase tracking-wider text-slate-400 group-hover:text-[#29327c]">
+                  <span>Click to view story</span>
+                  <span>→</span>
+                </div>
+              </div>
             ))}
           </div>
         </div>
