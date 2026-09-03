@@ -267,12 +267,12 @@ export default function DashboardPage() {
                     <th className="py-3 px-4">Rank & Team</th>
                     <th className="py-3 px-4 text-center">Score</th>
                     {activeBadges.map((badge, idx) => (
-                      <th key={badge.id} className="py-3 px-2 text-center" title={badge.name}>
-                        <div className="flex flex-col items-center gap-1.5">
+                      <th key={badge.id} className="py-3 px-4 text-center" title={badge.name}>
+                        <div className="flex flex-col items-center gap-2">
                           {badge.icon_url ? (
-                            /* 🔍 外层加 overflow-hidden 和 rounded-full 强制让图片呈现完美正圆形裁剪 */
-                            <div className="h-16 w-16 shrink-0 overflow-hidden rounded-full shadow-md border border-slate-100 bg-[#29327c] flex items-center justify-center">
-                              <img src={badge.icon_url} alt="" className="h-full w-full object-cover" />
+                            /* 🔍 照片尺寸在原先基础上放大50% (从 h-16 w-16 变为 h-24 w-24)，保持正圆裁剪和无白边 */
+                            <div className="h-24 w-24 aspect-square shrink-0 overflow-hidden rounded-full">
+                              <img src={badge.icon_url} alt="" className="h-full w-full object-cover block" />
                             </div>
                           ) : (
                             <span className="text-2xl">🏆</span>
@@ -317,7 +317,7 @@ export default function DashboardPage() {
                         {activeBadges.map((badge) => {
                           const isUnlocked = Boolean(t.badges[String(badge.id)]);
                           return (
-                            <td key={badge.id} className="py-4 px-2 text-center align-middle">
+                            <td key={badge.id} className="py-4 px-4 text-center align-middle">
                               {isUnlocked ? (
                                 <span className="inline-flex h-9 w-9 items-center justify-center rounded-full bg-mint/15 text-mint font-bold shadow-sm text-sm" title="Unlocked">
                                   ✓
