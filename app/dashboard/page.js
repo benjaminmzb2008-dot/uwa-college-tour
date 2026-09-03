@@ -283,7 +283,6 @@ export default function DashboardPage() {
                 <thead>
                   <tr className="border-b border-slate-100 text-xs font-bold uppercase tracking-wider text-slate-400">
                     <th className="py-3 px-4 text-center">Rank</th>
-                    <th className="py-3 px-4">Team</th>
                     <th className="py-3 px-4 text-center">Score</th>
                     {activeBadges.map((badge, idx) => (
                       <th key={badge.id} className="py-3 px-4 text-center" title={badge.name}>
@@ -308,20 +307,21 @@ export default function DashboardPage() {
 
                     return (
                       <tr key={t.team_id || t.team_name} className={`hover:bg-slate-50/80 transition-colors ${isFirst ? 'bg-amber-50/40' : ''}`}>
-                        <td className="py-4 px-4 text-center">
-                          <span className={`inline-flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold mx-auto ${
-                            index === 0 ? 'bg-gold text-white shadow-sm' : 
-                            index === 1 ? 'bg-slate-300 text-white' : 
-                            index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
-                          }`}>
-                            {index + 1}
-                          </span>
-                        </td>
-
                         <td className="py-4 px-4">
-                          <p className="font-display font-bold text-[#29327c] text-base">
-                            {t.team_name}
-                          </p>
+                          <div className="flex items-center gap-3">
+                            <span className={`flex h-7 w-7 items-center justify-center rounded-full text-xs font-bold ${
+                              index === 0 ? 'bg-gold text-white shadow-sm' : 
+                              index === 1 ? 'bg-slate-300 text-white' : 
+                              index === 2 ? 'bg-amber-600 text-white' : 'bg-slate-100 text-slate-600'
+                            }`}>
+                              {index + 1}
+                            </span>
+                            <div>
+                              <p className="font-display font-bold text-[#29327c] text-base">
+                                {t.team_name}
+                              </p>
+                            </div>
+                          </div>
                         </td>
 
                         <td className="py-4 px-4 text-center">
