@@ -141,7 +141,30 @@ export default function DashboardPage() {
       return;
     }
     loadData();
-  }, [ready, team, router, loadData]);
+
+    // ⚡ 启用 Supabase Realtime 实时监听 team_badges 表的变化
+    const channel = supabase
+      .channel("public:team_badges")
+      .on(
+        "postgres_changes",
+        {
+          event: "INSERT",
+          schema: "public",
+          table: "team_badges",
+        },
+        (payload) => {
+          // 如果是管理员，或者更新的刚好是当前队伍的记录，则触发重新加载
+          if (isAdmin || (teamId && String(payload.new.team_id) === String(teamId))) {
+            loadData();
+          }
+        }
+      )
+      .subscribe();
+
+    return () => {
+      supabase.removeChannel(channel);
+    };
+  }, [ready, team, router, loadData, isAdmin, teamId]);
 
   const activeBadges = badges.length > 0 ? badges : STATIC_ALL_BADGES;
 
@@ -214,8 +237,8 @@ export default function DashboardPage() {
 
   return (
     <AppShell 
-      title={isAdmin ? "Admin Leaderboard & Matrix" : "UWA College Campus Tour"} 
-      subtitle={isAdmin ? "Overview of all teams and badge progress matrix" : "Collect All Badges From every checkpoint"}
+      title={isAdmin ? "" : "UWA College Campus Tour"} 
+      subtitle={isAdmin ? "" : "Collect All Badges From every checkpoint"}
     >
       
       <div className={`mb-6 grid gap-4 ${isAdmin ? 'grid-cols-1' : 'sm:grid-cols-2'}`}>
@@ -295,9 +318,8 @@ export default function DashboardPage() {
                               {index + 1}
                             </span>
                             <div>
-                              <p className="font-display font-bold text-[#29327c] text-base flex items-center gap-2">
+                              <p className="font-display font-bold text-[#29327c] text-base">
                                 {t.team_name}
-                                {isFirst && <span>👑</span>}
                               </p>
                             </div>
                           </div>
