@@ -85,16 +85,25 @@ export default function DashboardPage() {
   
   const [badges, setBadges] = useState(STATIC_ALL_BADGES);
   const [unlocked, setUnlocked] = useState({});
+  
+  // 👑 管理员专属状态：保存所有团队及全量解锁数据
+  const [allTeams, setAllTeams] = useState([]);
+  const [allTeamsUnlocked, setAllTeamsUnlocked] = useState({}); // { teamId: { badgeId: unlocked_at } }
+
   const [loading, setLoading] = useState(true);
   const [pageError, setPageError] = useState("");
   const [celebration, setCelebration] = useState({ open: false, badge: null });
 
   const teamId = team?.id || team?.team_id || team?.uuid;
+  
+  // 🔍 判断当前账号是否为 Admin（可根据你的数据库字段调整，例如 team.is_admin 或 team.role === 'admin' 或名字匹配）
+  const isAdmin = Boolean(team?.is_admin || team?.role === 'admin' || team?.name?.toLowerCase() === 'admin');
 
   const loadData = useCallback(async () => {
     setPageError("");
 
     try {
+      // 1. 拉取徽章基础数据
       const badgeRes = await supabase
         .from("badges")
         .select("id, name, description, icon_url, photo_url, story_text")
@@ -104,7 +113,28 @@ export default function DashboardPage() {
         setBadges(badgeRes.data);
       }
 
-      if (teamId) {
+      if (isAdmin) {
+        // 👑 如果是管理员：拉取所有团队及所有团队的解锁记录
+        const teamsRes = await supabase.from("teams").select("*").order("name");
+        if (teamsRes.data) {
+          setAllTeams(teamsRes.data);
+        }
+
+        const allUnlocksRes = await supabase.from("team_badges").select("team_id, badge_id, unlocked_at");
+        if (allUnlocksRes.data) {
+          const map = {};
+          allUnlocksRes.data.forEach((row) => {
+            if (row?.team_id && row?.badge_id != null) {
+              if (!map[row.team_id]) {
+                map[row.team_id] = {};
+              }
+              map[row.team_id][String(row.badge_id)] = row.unlocked_at || true;
+            }
+          });
+          setAllTeamsUnlocked(map);
+        }
+      } else if (teamId) {
+        // 🛡️ 普通团队：只拉取当前团队的解锁记录
         const unlockRes = await supabase
           .from("team_badges")
           .select("badge_id, unlocked_at")
@@ -120,11 +150,12 @@ export default function DashboardPage() {
         setUnlocked(map);
       }
     } catch (err) {
-      console.error("加载解锁状态异常:", err);
+      console.error("加载数据异常:", err);
+      setPageError("Failed to load badge data.");
     } finally {
       setLoading(false);
     }
-  }, [teamId]);
+  }, [teamId, isAdmin]);
 
   useEffect(() => {
     if (!ready) return;
@@ -135,13 +166,14 @@ export default function DashboardPage() {
     loadData();
   }, [ready, team, router, loadData]);
 
-  const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
   const activeBadges = badges.length > 0 ? badges : STATIC_ALL_BADGES;
 
-  // 筛选出只属于已解锁的 badges
+  // 普通团队视角下只显示已解锁的 badge
   const unlockedBadges = useMemo(() => {
     return activeBadges.filter((badge) => Boolean(unlocked[String(badge.id)]));
   }, [activeBadges, unlocked]);
+
+  const unlockedCount = useMemo(() => Object.keys(unlocked).length, [unlocked]);
 
   async function handleRedeem(codeText) {
     if (!teamId) return { success: false, message: "Team ID not found." };
@@ -160,8 +192,7 @@ export default function DashboardPage() {
     }
 
     await loadData();
-    const currentList = badges.length > 0 ? badges : STATIC_ALL_BADGES;
-    const foundBadge = currentList.find((item) => String(item.id) === String(result.badge_id));
+    const foundBadge = activeBadges.find((item) => String(item.id) === String(result.badge_id));
     setCelebration({ 
       open: true, 
       badge: foundBadge || { id: result.badge_id, name: result?.badge_name, icon_url: result?.icon_url } 
@@ -182,48 +213,116 @@ export default function DashboardPage() {
   }
 
   return (
-    <AppShell title="UWA College Campus Tour" subtitle="Collect All Badges From every checkpoint">
+    <AppShell title={isAdmin ? "Admin Overview: All Teams" : "UWA College Campus Tour"} subtitle={isAdmin ? "Monitor badge progress across all campus teams" : "Collect All Badges From every checkpoint"}>
+      
+      {/* 顶部统计面板 */}
       <div className="mb-6 grid gap-4 sm:grid-cols-2">
         <div className="rounded-3xl bg-white p-5 shadow-card">
-          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">Badges unlocked</p>
-          <p className="mt-1 font-display text-2xl uppercase text-mint">{unlockedCount}</p>
+          <p className="text-xs font-bold uppercase tracking-widest text-slate-400">
+            {isAdmin ? "Total Teams Registered" : "Badges unlocked"}
+          </p>
+          <p className="mt-1 font-display text-2xl uppercase text-mint">
+            {isAdmin ? allTeams.length : unlockedCount}
+          </p>
         </div>
         <div className="rounded-3xl bg-[#29327c] p-5 text-white shadow-card">
           <p className="text-xs font-bold uppercase tracking-widest text-gold">Mission</p>
           <div className="mt-1 font-display text-lg leading-snug space-y-1">
-            <p>Explore the campus AQAP!</p>
-            <p>Complete the challenges at Checkpoint!</p>
-            <p>Go UWACer!</p>
+            {isAdmin ? (
+              <p>Viewing Admin Dashboard mode.</p>
+            ) : (
+              <>
+                <p>Explore the campus AQAP!</p>
+                <p>Complete the challenges at Checkpoint!</p>
+                <p>Go UWACer!</p>
+              </>
+            )}
           </div>
         </div>
       </div>
 
-      <RedeemPanel onRedeem={handleRedeem} />
+      {/* 普通用户才显示兑换面板，Admin 可以选择不显示或保留 */}
+      {!isAdmin && <RedeemPanel onRedeem={handleRedeem} />}
 
       {pageError && <p className="mt-4 rounded-2xl bg-red-50 px-4 py-3 text-sm font-medium text-red-700">{pageError}</p>}
 
-      <div className="mt-8">
-        <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
-          Badge Vault ({unlockedBadges.length})
-        </h2>
-        
-        {loading && <p className="mt-4 text-slate-500">Loading vault...</p>}
+      {/* 👑 管理员专属视图：展示所有团队及其解锁情况 */}
+      {isAdmin ? (
+        <div className="mt-8 space-y-8">
+          <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
+            All Teams Progress ({allTeams.length})
+          </h2>
 
-        {!loading && unlockedBadges.length === 0 && (
-          <p className="mt-4 text-sm text-slate-400">No badges unlocked yet. Enter a code above to collect your first badge!</p>
-        )}
+          {loading && <p className="text-slate-500">Loading all teams data...</p>}
 
-        <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
-          {!loading && unlockedBadges.map((badge) => (
-            <BadgeCard
-              key={badge.id}
-              badge={badge}
-              unlockedAt={unlocked[String(badge.id)]}
-              onClick={handleBadgeClick}
-            />
-          ))}
+          {!loading && allTeams.length === 0 && (
+            <p className="text-sm text-slate-400">No teams found in the database.</p>
+          )}
+
+          {allTeams.map((t) => {
+            const teamUnlocks = allTeamsUnlocked[t.id] || {};
+            const teamUnlockedList = activeBadges.filter((b) => Boolean(teamUnlocks[String(b.id)]));
+
+            return (
+              <div key={t.id} className="rounded-3xl bg-white p-6 shadow-card border border-slate-100">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-4 border-b border-slate-100">
+                  <div>
+                    <h3 className="font-display text-lg font-bold text-[#29327c] uppercase">
+                      {t.name || `Team ID: ${t.id}`}
+                    </h3>
+                    <p className="text-xs text-slate-400">Team ID: {t.id}</p>
+                  </div>
+                  <span className="inline-flex items-center rounded-full bg-mint/10 px-3 py-1 text-xs font-bold text-mint uppercase">
+                    Unlocked: {teamUnlockedList.length} / {activeBadges.length}
+                  </span>
+                </div>
+
+                {/* 该团队解锁的徽章列表 */}
+                <div className="mt-4">
+                  {teamUnlockedList.length === 0 ? (
+                    <p className="text-sm text-slate-400 italic">No badges unlocked by this team yet.</p>
+                  ) : (
+                    <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+                      {teamUnlockedList.map((badge) => (
+                        <BadgeCard
+                          key={badge.id}
+                          badge={badge}
+                          unlockedAt={teamUnlocks[String(badge.id)]}
+                          onClick={handleBadgeClick}
+                        />
+                      ))}
+                    </div>
+                  )}
+                </div>
+              </div>
+            );
+          })}
         </div>
-      </div>
+      ) : (
+        /* 🛡️ 普通团队视图：只展示当前团队已解锁的徽章 */
+        <div className="mt-8">
+          <h2 className="font-display text-xl font-extrabold uppercase text-[#29327c]">
+            Badge Vault ({unlockedBadges.length})
+          </h2>
+          
+          {loading && <p className="mt-4 text-slate-500">Loading vault...</p>}
+
+          {!loading && unlockedBadges.length === 0 && (
+            <p className="mt-4 text-sm text-slate-400">No badges unlocked yet. Enter a code above to collect your first badge!</p>
+          )}
+
+          <div className="mt-4 grid gap-5 sm:grid-cols-2 xl:grid-cols-3">
+            {!loading && unlockedBadges.map((badge) => (
+              <BadgeCard
+                key={badge.id}
+                badge={badge}
+                unlockedAt={unlocked[String(badge.id)]}
+                onClick={handleBadgeClick}
+              />
+            ))}
+          </div>
+        </div>
+      )}
 
       <CelebrateOverlay
         open={celebration.open}
